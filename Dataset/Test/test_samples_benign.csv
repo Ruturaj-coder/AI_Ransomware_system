@@ -1,0 +1,11 @@
+file_hash,file_extension,file_size,entropy,machine_type,pe_type,registry_read,registry_write,registry_delete,network_connections,dns_queries,suspicious_ips,processes_monitored
+legitimate_app1,exe,3245.67,4.2,AMD64,GUI,15,5,0,3,2,0,10
+system_utility,exe,2134.56,4.5,AMD64,GUI,20,6,1,2,1,0,8
+productivity_tool,exe,4532.12,4.1,AMD64,GUI,12,4,0,1,1,0,7
+development_ide,exe,25678.90,4.3,AMD64,GUI,25,8,1,4,2,0,12
+document_reader,pdf,1023.45,3.8,UNKNOWN,UNKNOWN,5,1,0,1,1,0,5
+spreadsheet_app,xlsx,567.89,3.5,UNKNOWN,UNKNOWN,4,1,0,1,1,0,4
+presentation_sw,pptx,789.12,3.6,UNKNOWN,UNKNOWN,4,1,0,1,1,0,4
+image_editor,exe,8765.43,4.4,AMD64,GUI,18,5,0,2,1,0,9
+music_player,exe,5432.10,4.0,AMD64,GUI,10,3,0,2,1,0,6
+video_player,exe,6789.01,4.2,AMD64,GUI,12,4,0,3,2,0,8 

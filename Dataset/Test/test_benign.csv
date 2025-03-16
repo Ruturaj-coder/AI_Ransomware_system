@@ -1,0 +1,2 @@
+file_hash,file_extension,file_size,entropy,machine_type,pe_type,registry_read,registry_write,registry_delete,network_connections,dns_queries,suspicious_ips,processes_monitored
+b3n1gn5ampl3h4sh123,docx,1245678,5.43,AMD64,GUI,25,12,0,3,2,0,2 

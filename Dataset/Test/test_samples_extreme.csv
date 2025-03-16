@@ -1,0 +1,11 @@
+file_hash,file_extension,file_size,entropy,machine_type,pe_type,registry_read,registry_write,registry_delete,network_connections,dns_queries,suspicious_ips,processes_monitored
+abcdef123456789,exe,12500.32,7.9,AMD64,GUI,210,185,34,78,42,12,65
+xyz987654321,exe,8945.67,7.8,AMD64,GUI,165,142,29,82,38,10,57
+malware123hash,exe,6821.45,7.7,AMD64,GUI,180,156,32,65,35,7,60
+ransomware456hash,exe,9876.54,7.8,AMD64,GUI,195,172,36,88,44,15,68
+suspicious789hash,dll,4532.12,7.6,AMD64,DLL,150,125,28,72,36,9,52
+danger_exe_2021,exe,7654.32,7.7,AMD64,GUI,175,148,30,76,39,11,59
+malicious_script,ps1,356.78,7.5,UNKNOWN,UNKNOWN,120,98,24,65,32,8,48
+encrypted_doc,docm,1245.67,7.6,UNKNOWN,UNKNOWN,135,112,26,58,30,6,45
+harmful_macros,xlsm,875.43,7.5,UNKNOWN,UNKNOWN,128,107,25,62,31,7,47
+ransomware_dropper,js,245.76,7.4,UNKNOWN,UNKNOWN,115,93,22,54,28,5,43 

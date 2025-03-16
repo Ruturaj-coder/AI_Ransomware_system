@@ -1,0 +1,11 @@
+file_hash,file_extension,file_size,entropy,machine_type,pe_type,registry_read,registry_write,registry_delete,network_connections,dns_queries,suspicious_ips,processes_monitored
+8f4e34c9d1e876f7e38bf7d255f2d3d8,exe,4582.21,7.2,AMD64,GUI,34,10,2,12,7,0,25
+7d3a4f5e6b2c1d0a9b8c7e6d5f4e3a2,exe,7832.45,7.8,AMD64,GUI,125,112,25,68,22,6,58
+6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1,dll,1245.12,6.2,AMD64,DLL,12,3,0,5,2,0,12
+5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0,exe,2456.78,4.8,AMD64,GUI,45,8,1,7,4,0,15
+4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c,docm,982.45,5.9,UNKNOWN,UNKNOWN,28,15,3,9,5,1,18
+a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p,pdf,1572.36,3.2,UNKNOWN,UNKNOWN,3,0,0,1,1,0,8
+1a2b3c4d5e6f7g8h9i0j9k8l7m6n5o4,js,125.54,6.8,UNKNOWN,UNKNOWN,15,7,4,22,15,2,17
+2b3c4d5e6f7g8h9i0j9k8l7m6n5o4p3,xlsm,684.21,6.5,UNKNOWN,UNKNOWN,32,18,5,14,9,1,21
+3c4d5e6f7g8h9i0j9k8l7m6n5o4p3q2,exe,9653.78,7.6,AMD64,GUI,86,95,18,72,36,8,43
+9i8u7y6t5r4e3w2q1p0o9i8u7y6t5r4,ps1,248.36,5.7,UNKNOWN,UNKNOWN,42,27,8,18,11,2,19 

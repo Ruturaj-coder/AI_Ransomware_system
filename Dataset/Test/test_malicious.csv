@@ -1,0 +1,2 @@
+file_hash,file_extension,file_size,entropy,machine_type,pe_type,registry_read,registry_write,registry_delete,network_connections,dns_queries,suspicious_ips,processes_monitored
+m4l1c10u5h4sh789xyz,exe,1874532,7.98,AMD64,GUI,376,289,45,87,42,18,15 
