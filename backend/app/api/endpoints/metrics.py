@@ -156,4 +156,177 @@ async def get_feature_distribution(
             "statistics": stats
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting metrics: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error getting metrics: {str(e)}")
+
+
+@router.get("/time-series-predictions")
+async def get_time_series_predictions(
+    days: int = 30,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get prediction data over time for time-series visualization
+    """
+    try:
+        from datetime import datetime, timedelta
+        import pytz
+        from sqlalchemy import func, cast, Date, TEXT
+        
+        # Calculate the start date (days ago from now)
+        end_date = datetime.now(pytz.UTC)
+        start_date = end_date - timedelta(days=days)
+        
+        # Get daily predictions count grouped by date and prediction class
+        # Cast date to text to avoid SQLite date conversion issues
+        result = await db.execute(
+            select(
+                func.strftime('%Y-%m-%d', Prediction.created_at).label('date'),
+                Prediction.prediction,
+                func.count(Prediction.id).label('count')
+            )
+            .where(Prediction.created_at >= start_date)
+            .group_by(
+                func.strftime('%Y-%m-%d', Prediction.created_at),
+                Prediction.prediction
+            )
+            .order_by(func.strftime('%Y-%m-%d', Prediction.created_at))
+        )
+        daily_data = result.all()
+        
+        # Format data for frontend - ensure date is a string
+        formatted_data = []
+        for date_str, prediction, count in daily_data:
+            formatted_data.append({
+                "date": str(date_str),  # Ensure it's a string
+                "prediction": prediction,
+                "count": count
+            })
+        
+        # Get file extension distribution (using file_extension instead of file_type)
+        result = await db.execute(
+            select(
+                Prediction.file_extension,
+                func.count(Prediction.id).label('count')
+            )
+            .where(Prediction.file_extension.isnot(None))
+            .group_by(Prediction.file_extension)
+            .order_by(desc(func.count(Prediction.id)))
+            .limit(10)  # Top 10 file types
+        )
+        file_type_data = [{"file_type": str(file_ext) if file_ext else "Unknown", "count": count} 
+                          for file_ext, count in result.all()]
+        
+        return {
+            "time_series": formatted_data,
+            "file_type_distribution": file_type_data
+        }
+        
+    except Exception as e:
+        import traceback
+        error_detail = f"Error getting time series data: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log the full error
+        raise HTTPException(status_code=500, detail=error_detail)
+
+
+@router.get("/feature-importance-details")
+async def get_feature_importance_details(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get detailed feature importance with statistical analysis
+    """
+    try:
+        # First check if we have a trained model with feature importance
+        result = await db.execute(
+            select(ModelMetrics)
+            .order_by(desc(ModelMetrics.created_at))
+            .limit(1)
+        )
+        latest_model = result.scalars().first()
+        
+        if not latest_model:
+            return {"message": "No model metrics available yet. Train a model first."}
+            
+        if not latest_model.feature_importance:
+            # Return a default response with empty data
+            return {
+                "message": "No feature importance data available yet. Train a model with feature importance.",
+                "feature_importance": [],
+                "feature_value_distributions": {}
+            }
+        
+        # Parse the feature importance data
+        try:
+            feature_importance = json.loads(latest_model.feature_importance)
+        except (json.JSONDecodeError, TypeError):
+            # If feature_importance is not valid JSON, return empty data
+            return {
+                "message": "Feature importance data is not in a valid format.",
+                "feature_importance": [],
+                "feature_value_distributions": {}
+            }
+        
+        # Get prediction data for feature value ranges
+        feature_data = {}
+        
+        for feature_item in feature_importance:
+            feature_name = feature_item["feature"]
+            
+            # Skip if not a numeric feature
+            if feature_name not in [
+                "registry_read", "registry_write", "registry_delete",
+                "network_connections", "dns_queries", "processes_monitored", 
+                "entropy", "file_size"
+            ]:
+                continue
+                
+            # Query for this feature's distribution by prediction class
+            try:
+                # Use a simpler query that avoids complex SQLite type conversions
+                result = await db.execute(
+                    select(
+                        func.round(getattr(Prediction, feature_name)).label('value'),
+                        Prediction.prediction,
+                        func.count(Prediction.id).label('count')
+                    )
+                    .where(getattr(Prediction, feature_name).isnot(None))
+                    .group_by(
+                        func.round(getattr(Prediction, feature_name)),
+                        Prediction.prediction
+                    )
+                    .order_by('value')
+                    .limit(100)  # Limit for performance
+                )
+                
+                # Format the feature data with value ranges and counts by class
+                feature_value_data = []
+                for value, prediction, count in result.all():
+                    try:
+                        # Handle possible None or non-integer values
+                        value_int = int(float(value)) if value is not None else 0
+                    except (ValueError, TypeError):
+                        value_int = 0
+                        
+                    feature_value_data.append({
+                        "value_range": value_int,
+                        "prediction": str(prediction),
+                        "count": int(count)
+                    })
+                
+                if feature_value_data:
+                    feature_data[feature_name] = feature_value_data
+            except Exception as e:
+                # Skip this feature if there's an error
+                print(f"Error processing feature {feature_name}: {str(e)}")
+                continue
+        
+        return {
+            "feature_importance": feature_importance,
+            "feature_value_distributions": feature_data
+        }
+        
+    except Exception as e:
+        import traceback
+        error_detail = f"Error getting feature importance details: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log the full error
+        raise HTTPException(status_code=500, detail=error_detail) 

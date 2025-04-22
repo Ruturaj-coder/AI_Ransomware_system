@@ -61,6 +61,45 @@ export const metricsApi = {
   // Get feature distribution
   getFeatureDistribution: (feature) => 
     api.get(`/metrics/feature-distribution?feature=${feature}`),
+    
+  // Get time-series prediction data
+  getTimeSeriesPredictions: (days = 30) => 
+    api.get(`/metrics/time-series-predictions?days=${days}`),
+    
+  // Get detailed feature importance data
+  getFeatureImportanceDetails: () => 
+    api.get('/metrics/feature-importance-details'),
+};
+
+// API for code analysis
+export const analysisApi = {
+  // Perform static analysis on file content
+  analyzeFile: (fileContent, fileType) => 
+    api.post('/analysis/static', { file_content: fileContent, file_type: fileType }),
+  
+  // Get available detection patterns
+  getDetectionPatterns: (fileType = null) => 
+    fileType ? api.get(`/analysis/patterns?file_type=${fileType}`) : api.get('/analysis/patterns'),
+  
+  // Start file monitoring
+  startMonitoring: (paths, fileExtensions = null) => 
+    api.post('/analysis/monitor/start', { paths, file_extensions: fileExtensions }),
+  
+  // Stop file monitoring
+  stopMonitoring: () => 
+    api.post('/analysis/monitor/stop'),
+  
+  // Get monitoring status
+  getMonitoringStatus: () => 
+    api.get('/analysis/monitor/status'),
+  
+  // Create WebSocket connection for real-time monitoring
+  createMonitoringWebSocket: () => {
+    // Create WebSocket URL by directly replacing the protocol
+    const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
+    console.log('Connecting to WebSocket:', wsUrl + '/analysis/monitor/ws');
+    return new WebSocket(wsUrl + '/analysis/monitor/ws');
+  }
 };
 
 // Create the API object
@@ -68,6 +107,7 @@ const apiObject = {
   predictionsApi,
   modelApi,
   metricsApi,
+  analysisApi,
 };
 
 export default apiObject; 

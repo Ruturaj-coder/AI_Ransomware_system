@@ -6,6 +6,8 @@ import Predict from './pages/Predict';
 import Upload from './pages/Upload';
 import Dashboard from './pages/Dashboard';
 import Train from './pages/Train';
+import BatchHistory from './pages/BatchHistory';
+import CodeAnalysis from './pages/CodeAnalysis';
 import './App.css';
 
 function App() {
@@ -20,6 +22,8 @@ function App() {
             <Route path="/upload" element={<Upload />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/train" element={<Train />} />
+            <Route path="/batch-history" element={<BatchHistory />} />
+            <Route path="/code-analysis" element={<CodeAnalysis />} />
             {/* Add more routes as needed */}
           </Routes>
         </div>

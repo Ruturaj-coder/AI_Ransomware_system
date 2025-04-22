@@ -1,127 +1,65 @@
 # AI-Powered Ransomware Detection System
 
-This project implements a deep learning-based ransomware detection system that classifies files as benign or malicious using system-level attributes. The system consists of a React frontend and FastAPI backend with a machine learning model trained on file and system behavior data.
-
-## Project Structure
-
-```
-ransomware-detection-system/
-├── backend/                     # FastAPI backend
-│   ├── app/                     # Backend application
-│   │   ├── api/                 # API endpoints
-│   │   ├── core/                # Core settings
-│   │   ├── db/                  # Database models and session
-│   │   ├── models/              # ML model implementation
-│   │   ├── schemas/             # Pydantic schemas
-│   │   └── utils/               # Utility functions
-│   ├── models/                  # Saved model files
-│   └── main.py                  # FastAPI entry point
-├── frontend/                    # React frontend
-├── Dataset/                     # Dataset directory
-│   └── Final_Dataset_without_duplicate.csv  # Training dataset
-└── README.md                    # Project documentation
-```
+An advanced ransomware detection system that uses deep learning to identify potentially malicious files based on their attributes and behaviors.
 
 ## Features
 
-- **Deep Learning Model**: Neural network for classifying files as benign or malicious
-- **Real-time Prediction API**: REST API for file classification
-- **Interactive UI**: Form-based and file upload interfaces for testing
-- **Model Training**: API for retraining the model
-- **Visualization Dashboard**: Performance metrics and feature importance visualization
+- **Machine Learning Detection**: Trained model detects ransomware based on file characteristics
+- **Modern Web Interface**: React-based frontend with intuitive UI for file analysis
+- **Batch Processing**: Support for CSV batch uploads and analysis
+- **Dashboard**: Visualize prediction metrics and system performance
+- **Model Training**: Train and fine-tune detection models through the interface
 
 ## Technology Stack
 
-- **Frontend**: React with TypeScript, TailwindCSS
-- **Backend**: FastAPI
-- **Database**: SQLite (local)
-- **ML Framework**: TensorFlow/Keras
-- **Data Processing**: Pandas, NumPy, Scikit-learn
+### Frontend
+- React.js
+- Tailwind CSS
+- Axios for API communication
+
+### Backend
+- FastAPI (Python)
+- SQLite/SQLAlchemy for data storage
+- Scikit-learn and TensorFlow for ML models
+- Imbalanced-learn for handling imbalanced datasets
 
 ## Getting Started
 
-### Prerequisites
-
-- Python 3.8+
-- Node.js 14+
-- npm or yarn
-
 ### Backend Setup
 
-1. Navigate to the backend directory:
-   ```
-   cd backend
-   ```
-
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Start the FastAPI server:
-   ```
-   python main.py
-   ```
-
-   The API will be available at http://localhost:8000, and Swagger documentation at http://localhost:8000/docs
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
 
 ### Frontend Setup
 
-1. Navigate to the frontend directory:
-   ```
-   cd frontend
-   ```
+```bash
+cd frontend
+npm install
+npm start
+```
 
-2. Install dependencies:
-   ```
-   npm install
-   # or
-   yarn install
-   ```
+## System Architecture
 
-3. Start the development server:
-   ```
-   npm start
-   # or
-   yarn start
-   ```
+The system consists of two main components:
+1. **Backend API**: Handles prediction requests, model training, and data storage
+2. **Frontend Application**: Provides user interface for prediction, batch uploads, and dashboard visualization
 
-   The React app will be available at http://localhost:3000
+## File Detection Features
 
-## Usage
+The system analyzes various file attributes including:
+- File entropy
+- Registry operations
+- Network activities
+- System behaviors
+- File characteristics
 
-### Training the Model
+## Contributors
 
-1. Access the model training endpoint in the API:
-   ```
-   POST /api/model/train
-   ```
-
-2. Alternatively, use the training form in the frontend
-
-### Making Predictions
-
-1. Use the prediction form in the frontend to enter file attributes
-2. Upload a CSV file with file attributes
-3. Or call the prediction API directly:
-   ```
-   POST /api/predictions/
-   ```
-
-## Dataset
-
-The project uses a dataset with the following characteristics:
-- Size: 21,752 entries, 77 features
-- Features include file-based attributes, system activity indicators, and network behavior
-- Target variable: Class (Benign/Malicious)
-
-## Model Details
-
-- Deep learning neural network with multiple layers
-- Input: Preprocessed file and system attributes
-- Output: Binary classification (Benign/Malicious)
-- Performance metrics available through the API
+- Ruturaj
 
 ## License
 
-This project is for educational purposes only. 
+This project is licensed under the MIT License - see the LICENSE file for details. 

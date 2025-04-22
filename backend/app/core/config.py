@@ -20,7 +20,7 @@ class Settings:
     FEATURE_LIST_PATH = os.path.join(MODEL_DIR, "features.joblib")
     
     # Database
-    SQLITE_DB_PATH = os.path.join(BASE_DIR, "app", "db", "ransomware_detection.db")
+    SQLITE_DB_PATH = os.path.join(BASE_DIR, "ransomware.db")
     SQLITE_URL = f"sqlite+aiosqlite:///{SQLITE_DB_PATH}"
     
     # Model settings

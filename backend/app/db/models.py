@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
@@ -35,12 +36,42 @@ class Prediction(Base):
     prediction_category = Column(String, nullable=True)
     prediction_family = Column(String, nullable=True)
     
+    # Batch relationship
+    batch_id = Column(Integer, ForeignKey("batch_predictions.id"), nullable=True)
+    batch = relationship("BatchPrediction", back_populates="predictions")
+    
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     def __repr__(self):
         return f"<Prediction {self.id}: {self.prediction}>"
+
+
+class BatchPrediction(Base):
+    """
+    Model for storing batch prediction data
+    """
+    __tablename__ = "batch_predictions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    batch_name = Column(String, index=True)
+    description = Column(String, nullable=True)
+    file_count = Column(Integer, default=0)
+    malicious_count = Column(Integer, default=0)
+    benign_count = Column(Integer, default=0)
+    status = Column(String, default="completed")  # in_progress, completed, failed
+    error_message = Column(Text, nullable=True)
+    
+    # Relationship to individual predictions
+    predictions = relationship("Prediction", back_populates="batch")
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    def __repr__(self):
+        return f"<BatchPrediction {self.id}: {self.batch_name}>"
 
 
 class ModelMetrics(Base):
@@ -68,6 +99,7 @@ class ModelMetrics(Base):
     architecture_summary = Column(Text, nullable=True)
     training_time = Column(Float, nullable=True)
     confusion_matrix = Column(Text, nullable=True)
+    feature_importance = Column(Text, nullable=True)  # JSON string of feature importance data
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

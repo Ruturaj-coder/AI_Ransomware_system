@@ -1,0 +1,124 @@
+# AI-Powered Ransomware Detection System - Project Intelligence
+
+## Project Structure
+- Backend is organized in a FastAPI standard structure with routes in `app/api/endpoints/`
+- Frontend follows React component-based architecture with pages in `src/pages/`
+- ML models are defined in `backend/app/models/model.py`
+- Dataset is available in `Dataset/` directory with a large CSV file
+- New modules will be added under `backend/app/utils/` for each enhancement feature
+
+## Implementation Patterns
+- Frontend forms use controlled components with React state
+- Backend API follows RESTful conventions
+- Neural network model uses TensorFlow with standardized layers
+- Data preprocessing includes SMOTE for handling class imbalance
+- New static analysis will use pattern matching and heuristic detection
+- Scheduled tasks will use APScheduler with database storage for persistence
+- PDF generation will use ReportLab or WeasyPrint for server-side rendering
+
+## Feature Implementation Plan
+- File Content Analysis feature is implemented ✓
+- Automated Model Retraining will be implemented second
+- Reporting System will be implemented last
+- Each feature will follow a modular approach with dedicated modules
+
+## Code Style Preferences
+- Python code follows PEP 8 conventions
+- React components use functional style with hooks
+- Tailwind CSS for styling frontend components
+- Clear separation between API routes and business logic
+- New utility functions should be well-documented with docstrings
+- New endpoints should follow the existing pattern with proper request/response models
+
+## Key Implementation Paths
+- File prediction workflow:
+  1. User input in `frontend/src/pages/Predict.js`
+  2. API call to `backend/app/api/endpoints/predictions.py`
+  3. Model inference in `backend/app/models/model.py`
+  4. Result displayed in frontend
+
+- Model training workflow:
+  1. Form in `frontend/src/pages/Train.js`
+  2. API call to `backend/app/api/endpoints/model.py`
+  3. Training process in `backend/app/models/model.py`
+  4. Results saved to database
+
+- Static analysis workflow (implemented):
+  1. Upload/paste script file in `frontend/src/pages/CodeAnalysis.js`
+  2. Process through `backend/app/utils/static_analysis.py`
+  3. Detect patterns of obfuscation and malicious code
+  4. Return and display detailed analysis results
+  5. Can also be triggered from the prediction page for JS files
+
+- Automated retraining workflow (planned):
+  1. Configure schedule through admin UI
+  2. Scheduler triggers retraining job
+  3. New model evaluated against existing model
+  4. Better model promoted to production
+  
+- Reporting workflow (planned):
+  1. User requests report generation
+  2. Backend collects prediction data and visualizations
+  3. PDF generated with detection reasoning
+  4. Report delivered to frontend for download
+
+## Project-Specific Knowledge
+- The system uses a deep learning approach instead of traditional signature-based detection
+- Features for analysis include file attributes and behavior metrics
+- The dataset likely contains both benign files and ransomware samples
+- The model handles class imbalance using SMOTE during training
+- New features will enhance detection capability with static code analysis
+- Scheduled retraining will keep the model updated with new samples
+- Detailed reporting will provide transparency in detection reasoning
+
+## Challenges and Considerations
+- Large dataset (over 20MB) requires efficient processing
+- Neural network model needs careful tuning for accuracy
+- Frontend needs to handle various file attribute inputs
+- SQLite database may have limitations for large-scale deployment
+- Static analysis patterns need to avoid false positives
+- Scheduled tasks require persistent server
+- PDF generation must be efficient and properly styled
+
+# File Content Analysis
+
+## Static Analysis Module
+- The static analysis module is implemented in `backend/app/utils/static_analysis.py`
+- It uses regex-based pattern matching to identify suspicious patterns in JavaScript files
+- Each pattern has a severity level (high, medium, low) and associated context lines
+- The module calculates a suspicion score based on the number and severity of detected patterns
+
+## API Endpoints
+- Analysis endpoints are defined in `backend/app/api/endpoints/analysis.py`
+- `/api/analysis/static` - Performs static analysis on script file content
+- `/api/analysis/patterns` - Returns information about available detection patterns
+- Schemas for these endpoints are in `backend/app/schemas/analysis.py`
+
+## JavaScript Patterns
+The following suspicious patterns are detected in JavaScript files:
+- eval usage
+- Function constructor
+- Encoded strings (atob, btoa)
+- Document.write
+- Base64 content
+- Network access (URLs, IPs)
+- Filesystem access
+- Environment detection
+- String obfuscation
+- WebSocket usage
+
+## Frontend Implementation
+- Dedicated page at `frontend/src/pages/CodeAnalysis.js` for file analysis
+- Reusable component `frontend/src/components/CodeAnalysisResult.js` for displaying results
+- API client in `frontend/src/api/api.js` with `analysisApi` object
+- Integration with prediction page for automatic JavaScript file analysis
+- Visual representation of suspicion score and risk level
+- Pattern distribution table and detailed detection results
+- Support for both file upload and direct code pasting
+
+## Integration
+- File Content Analysis is integrated with the prediction workflow
+- When a JavaScript file is uploaded in the prediction page, it's automatically analyzed
+- The analysis results affect the overall prediction result
+- Suspicion score is displayed alongside the ML confidence score
+- The full analysis results are shown in a dedicated section 

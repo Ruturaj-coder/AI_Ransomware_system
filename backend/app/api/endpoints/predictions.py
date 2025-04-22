@@ -1,16 +1,18 @@
 import json
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import text
+from sqlalchemy import text, desc, asc, or_, and_
+from datetime import datetime, timedelta
 import pandas as pd
 
 from app.models.model import model
-from app.db.models import Prediction
+from app.db.models import Prediction, BatchPrediction
 from app.schemas.prediction import (
     PredictionRequest, PredictionResponse, PredictionList,
-    FileUploadResponse
+    FileUploadResponse, BatchPredictionCreate, BatchPredictionResponse,
+    BatchPredictionList, BatchPredictionFilter
 )
 from app.db.session import get_db
 
@@ -49,6 +51,10 @@ async def create_prediction(
         db.add(db_prediction)
         await db.commit()
         await db.refresh(db_prediction)
+        
+        # Update batch statistics if this prediction is part of a batch
+        if db_prediction.batch_id:
+            await update_batch_statistics(db, db_prediction.batch_id)
         
         return db_prediction
     except Exception as e:
@@ -206,4 +212,218 @@ async def clear_predictions(
             "deleted_count": "all"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear predictions: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to clear predictions: {str(e)}")
+
+
+# Batch prediction endpoints
+@router.post("/batch/", response_model=BatchPredictionResponse)
+async def create_batch_prediction(
+    request: BatchPredictionCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Create a new batch prediction
+    """
+    try:
+        # Create batch prediction record
+        db_batch = BatchPrediction(**request.dict())
+        db_batch.status = "in_progress"
+        
+        db.add(db_batch)
+        await db.commit()
+        await db.refresh(db_batch)
+        
+        return db_batch
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Batch creation failed: {str(e)}")
+
+
+@router.get("/batch/{batch_id}", response_model=BatchPredictionResponse)
+async def get_batch_prediction(
+    batch_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get a batch prediction by ID
+    """
+    result = await db.execute(select(BatchPrediction).where(BatchPrediction.id == batch_id))
+    batch = result.scalars().first()
+    
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch prediction not found")
+    
+    return batch
+
+
+@router.get("/batch/", response_model=BatchPredictionList)
+async def list_batch_predictions(
+    skip: int = 0,
+    limit: int = 100,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    status: Optional[str] = None,
+    keyword: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List all batch predictions with filtering, sorting and pagination
+    """
+    # Base query
+    query = select(BatchPrediction)
+    count_query = select(BatchPrediction.id)
+    
+    # Apply filters
+    filters = []
+    
+    if date_from:
+        try:
+            from_date = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            filters.append(BatchPrediction.created_at >= from_date)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+            
+    if date_to:
+        try:
+            to_date = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            filters.append(BatchPrediction.created_at <= to_date)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+            
+    if status:
+        filters.append(BatchPrediction.status == status)
+        
+    if keyword:
+        filters.append(or_(
+            BatchPrediction.batch_name.ilike(f"%{keyword}%"),
+            BatchPrediction.description.ilike(f"%{keyword}%")
+        ))
+    
+    if filters:
+        filter_condition = and_(*filters)
+        query = query.where(filter_condition)
+        count_query = count_query.where(filter_condition)
+    
+    # Apply sorting
+    if sort_order.lower() == "asc":
+        sort_func = asc
+    else:
+        sort_func = desc
+        
+    if hasattr(BatchPrediction, sort_by):
+        sort_column = getattr(BatchPrediction, sort_by)
+        query = query.order_by(sort_func(sort_column))
+    else:
+        # Default to created_at if invalid sort column
+        query = query.order_by(sort_func(BatchPrediction.created_at))
+    
+    # Get total count with filters
+    total_result = await db.execute(count_query)
+    total = len(total_result.scalars().all())
+    
+    # Apply pagination
+    query = query.offset(skip).limit(limit)
+    
+    # Execute query
+    result = await db.execute(query)
+    items = result.scalars().all()
+    
+    return {"items": items, "total": total}
+
+
+@router.get("/batch/{batch_id}/predictions", response_model=PredictionList)
+async def get_batch_predictions(
+    batch_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get predictions for a specific batch
+    """
+    # Verify batch exists
+    batch_result = await db.execute(select(BatchPrediction).where(BatchPrediction.id == batch_id))
+    batch = batch_result.scalars().first()
+    
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch prediction not found")
+    
+    # Get total count for this batch
+    total_result = await db.execute(select(Prediction.id).where(Prediction.batch_id == batch_id))
+    total = len(total_result.scalars().all())
+    
+    # Get predictions for this batch with pagination
+    result = await db.execute(
+        select(Prediction)
+        .where(Prediction.batch_id == batch_id)
+        .order_by(Prediction.id.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    items = result.scalars().all()
+    
+    return {"items": items, "total": total}
+
+
+@router.put("/batch/{batch_id}/complete", response_model=BatchPredictionResponse)
+async def complete_batch_prediction(
+    batch_id: int,
+    error_message: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Mark a batch prediction as completed
+    """
+    # Get batch
+    result = await db.execute(select(BatchPrediction).where(BatchPrediction.id == batch_id))
+    batch = result.scalars().first()
+    
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch prediction not found")
+    
+    # Update batch status
+    if error_message:
+        batch.status = "failed"
+        batch.error_message = error_message
+    else:
+        batch.status = "completed"
+    
+    batch.completed_at = datetime.utcnow()
+    
+    # Update batch statistics
+    await update_batch_statistics(db, batch_id)
+    
+    await db.commit()
+    await db.refresh(batch)
+    
+    return batch
+
+
+async def update_batch_statistics(db: AsyncSession, batch_id: int):
+    """
+    Update batch statistics based on the associated predictions
+    """
+    # Get batch
+    result = await db.execute(select(BatchPrediction).where(BatchPrediction.id == batch_id))
+    batch = result.scalars().first()
+    
+    if not batch:
+        return
+    
+    # Count total predictions
+    count_result = await db.execute(select(Prediction.id).where(Prediction.batch_id == batch_id))
+    batch.file_count = len(count_result.scalars().all())
+    
+    # Count malicious predictions
+    malicious_result = await db.execute(
+        select(Prediction.id)
+        .where(Prediction.batch_id == batch_id)
+        .where(Prediction.prediction == "malicious")
+    )
+    batch.malicious_count = len(malicious_result.scalars().all())
+    
+    # Calculate benign count
+    batch.benign_count = batch.file_count - batch.malicious_count
+    
+    await db.commit() 
